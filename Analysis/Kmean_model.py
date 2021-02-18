@@ -6,16 +6,14 @@ leveling adn kmeans analysis OOP
 """
 
 import pygame
-import numpy as np 
 import pygame_widgets as pw
+import numpy as np 
 import cv2
 from sklearn.cluster import KMeans
 
 
 
 class Kmeans_model:
-    
-
     
     def __init__ (self,Data):
         
@@ -35,14 +33,7 @@ class Kmeans_model:
         
         # initial label setting
         self.calulate_K_mean()
-        
-        
-    # %% main run function
 
-        
-        
-    # %% k-mean related methods 
-    
     def init_centers(self):        
          return np.linspace(self.Frame_corrected.min(),self.Frame_corrected.max(),self.n).reshape(self.n,1)
         
@@ -56,13 +47,15 @@ class Kmeans_model:
         ## calcultaed Kmean model
         kmeans   = KMeans(init = self.centers , n_clusters=self.n,n_init=1).fit(data_reduced)
         
+        ## sorting centers
+        kmeans.cluster_centers_ = np.sort(kmeans.cluster_centers_,axis = 0)
+        
         ## Prediction label to all points         
         results = kmeans.predict(self.Frame_corrected.flatten().reshape(self.number_of_elements,1))
 
         
         ## updates center - good speed up trick!
         self.centers = kmeans.cluster_centers_
-        
         
         
         ## creates labels image 
@@ -189,11 +182,9 @@ class Kmeans_model:
         filtered_image = self.Frame_corrected
         
         for i in range (0,self.number_of_gauss):
-        
-            kernel = 1/16 * np.array ([[1,2,1],[2,4,2],[1,2,1]])
             
-            # filtered_image = cv2.filter2D(img,-1,kernel)
             filtered_image = cv2.blur(filtered_image,(3,3))
+            
         
         self.Frame_corrected = filtered_image
         
@@ -358,11 +349,9 @@ class Kmeans_model:
             self.Frame_number = i
             self.update_Frame()
             self.update_Frame_corrected()
+            self.gauss_smooth ()
             self.update_kmeans ()
             
-            #  add sorting
-            # i = np.argsort(self.centers)
-            # print(i)
             all_labels [:,:,i] = self.Labels        
         return all_labels
         

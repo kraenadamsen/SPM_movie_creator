@@ -1,7 +1,3 @@
-"""
-Reading from the /MULs folders 
-"""
-
 #%% libaries import 
 
 """
@@ -136,12 +132,11 @@ widgets_contrast = [' [',
   
 bar_contrast = progressbar.ProgressBar(max_value=len(Refence_dict),widgets=widgets_contrast).start()
 
+###################### select type of drift compensation #####################
+
 # sr = StackReg(StackReg.RIGID_BODY)
 sr = StackReg(StackReg.TRANSLATION)
 
-
-# contrast_adjusted_image = (contrast_adjusted_image - (np.min(contrast_adjusted_image))) 
-# contrast_adjusted_image = 255 * (contrast_adjusted_image / np.max(contrast_adjusted_image))
 
 for image_ref in Refence_dict.keys():
     
@@ -153,7 +148,7 @@ for image_ref in Refence_dict.keys():
     im = (im - (np.min(im))) 
     im = 255 * (im / np.max(im))
     
-
+    ################### select type of contrast matching #####################
     # im = utilities.hist_match(contrast_adjusted_image,im)
     im = utilities.hist_match_kmeans(contrast_adjusted_image,im, n = 3)
 
@@ -180,7 +175,6 @@ for image_ref in Refence_dict.keys():
 
 # %% save tiltcorrected data
 
-
 print('\n Saving New Data files')
 
 new_gwy_container.tofile('../Saved_data/new_file.gwy')
@@ -203,22 +197,8 @@ utilities.Saving_data_to_hdf5_file (path = '../Saved_data/Aligned_data.h5',\
                           size = (len(contrast_adjusted_image),len(contrast_adjusted_image),len(Refence_dict)),\
                           Data =  Aligned_Data)
 
-    
-
 
 # %% Finished
 
-
-
-
-
-
 print('\n Finished')
-
-
-
-
-
-
-
 
