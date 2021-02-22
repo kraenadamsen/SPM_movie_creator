@@ -143,17 +143,17 @@ def setup(Frame,Refence_dict):
      text_frame_number = pw.TextBox(
                 screen, Window_size [0] - 200 + 25, 430, 60, 40, fontSize=24)
      
-     
-     global slider_frame_number    
-
-     slider_frame_number= pw.Slider(
-                screen, Window_size [0] - 200 + 25, 410, 150, 10, min = 1, max = len(Refence_dict), step = 1,initial = 1)
-     
-     text_frame_describe = pw.TextBox(
-                screen, Window_size [0] - 200 + 85, 430, 100, 40, fontSize=16,
-                borderColour=(128, 128, 128),colour=(128, 128, 128))
-     text_frame_describe.setText('Frame Number')
-     text_frame_describe.draw()
+     if len(Refence_dict)!= 1:
+         global slider_frame_number    
+    
+         slider_frame_number= pw.Slider(
+                    screen, Window_size [0] - 200 + 25, 410, 150, 10, min = 0, max = len(Refence_dict)-1, step = 1,initial = 1)
+         
+         text_frame_describe = pw.TextBox(
+                    screen, Window_size [0] - 200 + 85, 430, 100, 40, fontSize=16,
+                    borderColour=(128, 128, 128),colour=(128, 128, 128))
+         text_frame_describe.setText('Frame Number')
+         text_frame_describe.draw()
      
 
     
@@ -168,8 +168,9 @@ def setup(Frame,Refence_dict):
      
      button_redo.draw()
      
-     text_frame_number.draw()
-     slider_frame_number.draw()
+     if len(Refence_dict)!= 1:
+         text_frame_number.draw()
+         slider_frame_number.draw()
      
      
      return screen, px
@@ -279,10 +280,6 @@ def get_Data(Data,ref_file_number,ref_frame_number):
     Frame  = Frame [::-1,:]
     Frame = Frame.transpose()
     
-
-    
-    
-    
     return Frame
 
 
@@ -349,8 +346,9 @@ def three_point_selection(Data, Refence_dict, Frame_used_for_correction = 1):
                     slider_brightness.listen(events)
                     slider_brightness.draw()
                     
-                    slider_frame_number.listen(events)
-                    slider_frame_number.draw()                    
+                    if len(Refence_dict)!= 1:
+                        slider_frame_number.listen(events)
+                        slider_frame_number.draw()                    
                     
                     text_contrast.setText(slider_contrast.getValue()-255)
                     text_contrast.draw()
@@ -358,10 +356,11 @@ def three_point_selection(Data, Refence_dict, Frame_used_for_correction = 1):
                     text_brightness.setText(slider_brightness.getValue()-255)
                     text_brightness.draw()
                     
-                    text_frame_number.setText(slider_frame_number.getValue())
-                    text_frame_number.draw() 
+                    if len(Refence_dict)!= 1:
+                        text_frame_number.setText(slider_frame_number.getValue())
+                        text_frame_number.draw() 
                     
-                    ref_file_number,ref_frame_number = Refence_dict [slider_frame_number.getValue()]
+                        ref_file_number,ref_frame_number = Refence_dict [slider_frame_number.getValue()]
                     
                     Frame = get_Data(Data,ref_file_number,ref_frame_number) 
                     
@@ -382,7 +381,7 @@ def three_point_selection(Data, Refence_dict, Frame_used_for_correction = 1):
         pygame.display.quit()
         
 
-        
+        img_corrected = cv2.resize (img_corrected,(w,h))
     
         return (first + second + third, img_corrected)
 
@@ -399,7 +398,7 @@ def run (Data, Refence_dict, Frame_used_for_correction = 1):
        
 
     
-    return three_point_selection(Data, Refence_dict, Frame_used_for_correction = 1)
+    return three_point_selection(Data, Refence_dict, Frame_used_for_correction = 0)
     
 
 

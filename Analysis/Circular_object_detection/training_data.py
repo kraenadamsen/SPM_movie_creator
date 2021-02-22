@@ -16,7 +16,7 @@ from sklearn.calibration import CalibratedClassifierCV
 
 import numpy as np
 
-
+image_size = 32
 
 ## Gererating Data
 
@@ -24,15 +24,15 @@ import numpy as np
 def gaus2d(x=0, y=0, mx=0, my=0, sx=.8, sy=1):
     return 1. / (2. * np.pi * sx * sy) * np.exp(-((x - mx)**2. / (2. * sx**2.) + (y - my)**2. / (2. * sy**2.)))
 
-x = np.linspace(-2, 2,32)
-y = np.linspace(-2, 2,32)
+x = np.linspace(-2, 2,image_size)
+y = np.linspace(-2, 2,image_size )
 x, y = np.meshgrid(x, y) # get 2D variables instead of 1D
 
-number_of_samples = 10000
+number_of_samples = 20000
 
-Generated_data_True = np.empty([number_of_samples,32,32])
-Generated_data_False = np.empty([number_of_samples,32,32])
-Generated_data_False_line_strike = np.empty([number_of_samples,32,32])
+Generated_data_True = np.empty([number_of_samples,image_size ,image_size ])
+Generated_data_False = np.empty([number_of_samples,image_size ,image_size ])
+Generated_data_False_line_strike = np.empty([number_of_samples,image_size ,image_size ])
 
 for i in range (0,number_of_samples):
     
@@ -67,7 +67,7 @@ for i in range (0,number_of_samples):
         width = random.randint(1,8)
 
         
-        Generated_data_False_line_strike[i,row : row + width,:] = np.ones([width,32])
+        Generated_data_False_line_strike[i,row : row + width,:] = np.ones([width,image_size ])
     else:
         
         Generated_data_False_line_strike[i,:,:] = z/z.max()
@@ -78,7 +78,7 @@ for i in range (0,number_of_samples):
         
         
         
-        Generated_data_False_line_strike[i,row : row + width,:] = np.ones([width,32])
+        Generated_data_False_line_strike[i,row : row + width,:] = np.ones([width,image_size ])
     
     
     

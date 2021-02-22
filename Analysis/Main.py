@@ -16,8 +16,12 @@ from scipy import fftpack, ndimage,signal
 from pystackreg import StackReg
 import progressbar 
 from skimage.feature import peak_local_max,hog
+import os
+# import compiled_functions
 
-lib = cdll.LoadLibrary('HCCF_calculator/x64/Debug/HCCF_calculator.dll')
+file_local_dir = os.path.dirname(__file__)
+
+lib = cdll.LoadLibrary(file_local_dir+'/C_functions/HHCF/HHCF.dll' )
 
 
 # %% import Data
@@ -26,14 +30,15 @@ Data = np.array(hf.get('Data'))
 hf.close()
 
 
-
 #%% ################ image segmentation using Kmeans #########################
 
-# my_model =  Kmean_model.Kmeans_model(Data)
+my_model =  Kmean_model.Kmeans_model(Data)
 
-# my_model.RUN()
+my_model.RUN()
 
-# all_labels = my_model.get_all_labels()
+all_labels = my_model.get_all_labels()
+
+
 
 
 # # %% counts ratio between "layers"
@@ -68,91 +73,121 @@ hf.close()
 
 # %% ############################ HHCF calculations ##########################
 
-lib.HHCF.restype = ctypes.c_double
-lib.HHCF.argtypes = [np.ctypeslib.ndpointer(dtype=np.float64),	ctypes.c_int]
+######## python solution - very slow #########
+# def HHCF (image_np,R,im_size):
 
-
-widgets_HHCF = [' [', 
-         progressbar.Timer(format= 'Calculation time:   %(elapsed)s'), 
-         '] ', 
-           progressbar.Bar('*'),' (', 
-           progressbar.ETA(), ') '] 
-bar_HHCF = progressbar.ProgressBar(max_value=Data.shape[2],widgets=widgets_HHCF).start() 
-
-HHCF_results = np.zeros([Data.shape[2],199])
-for i in range(0,Data.shape[2]):
-    test_data = Data [:,:,i]/32.768
-    HHCF_results[i,:] = [lib.HHCF(test_data, r) for r in range(1,200)]
+#     image = image_np.tolist() 
+        
+#     image_sum = [0] * R 
+  
     
-    bar_HHCF.update(i)
 
-#%%plotting HHCF
-colors = pl.cm.jet(np.linspace(0,1,Data.shape[2]))
-plt.close('all')
-plt.figure()
-points = [0]*Data.shape[2]
-J = 18
-Radius = np.linspace(0, 100*(199/511),199)
+#     for r in range (R):
+#         for i in range(0,im_size): # iterates over fast scanning lines
+#             line_sum = .0
+        
+#             for j in range(0,im_size-r): # iterates through fast scanning lines
 
-for i in range (0,Data.shape[2]):
-    plt.plot( Radius , np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:]),color = colors[i,:],lw = .5)
-    points [i] = np.array(HHCF_results[i,J])/np.max(HHCF_results[i,:])
+            
+#                 line_sum = line_sum + (image[j + (i * im_size)] - image[j+ (i * im_size) + r])**2
+            
+#             image_sum[r] = image_sum[r] + (line_sum / (im_size - r))
+     
+#         image_sum[r] = image_sum[r] / im_size
+        
+#     return image_sum
+
+# HHCF(Data[:,:,40].flatten(),2,256)
+
+
+########### C / C++ solution - fast ############
+
+
+# lib.HHCF.restype = ctypes.c_double
+# lib.HHCF.argtypes = [np.ctypeslib.ndpointer(dtype=np.float64), ctypes.c_int, ctypes.c_int]
+
+
+
+# widgets_HHCF = [' [', 
+#           progressbar.Timer(format= 'Calculation time:   %(elapsed)s'), 
+#           '] ', 
+#             progressbar.Bar('*'),' (', 
+#             progressbar.ETA(), ') '] 
+# bar_HHCF = progressbar.ProgressBar(max_value=Data.shape[2],widgets=widgets_HHCF).start() 
+
+# HHCF_results = np.zeros([Data.shape[2],199])
+# for i in range(0,Data.shape[2]):
+#     test_data = Data [:,:,i]/32.768
+#     HHCF_results[i,:] = [lib.HHCF(test_data, test_data.shape[0],r) for r in range(1,200)]
     
-# plt.vlines ( Radius [J] , 0,1 )
-# plt.xlim([0,11]) 
-plt.xlabel('radius [nm]')
-plt.ylabel('HHCF [nm^2]')
+#     bar_HHCF.update(i)
 
-plt.figure()
 
-for i in range (0,Data.shape[2]):
-    plt.plot( Radius , np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:]),color = colors[i,:],lw = .5)
-    points [i] = np.array(HHCF_results[i,J])/np.max(HHCF_results[i,:])
+
+# #%%plotting HHCF
+# colors = pl.cm.jet(np.linspace(0,1,Data.shape[2]))
+# plt.close('all')
+# plt.figure()
+# points = [0]*Data.shape[2]
+# J = 18
+# Radius = np.linspace(0, 100*(199/511),199)
+
+# for i in range (0,Data.shape[2]):
+#     plt.plot( Radius , np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:]),color = colors[i,:],lw = .5)
+#     points [i] = np.array(HHCF_results[i,J])/np.max(HHCF_results[i,:])
     
-# plt.vlines ( Radius [J] , 0,1 )
-plt.xlim([0,11]) 
-plt.xlabel('radius [nm]')
-plt.ylabel('HHCF [nm^2]')
-
-
-plt.figure()
-
-for i in range (0,Data.shape[2]):
-    plt.plot(Radius ,np.gradient( np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:])),color = colors[i,:],lw =.5)
-
-plt.xlim([0,11])
-# plt.ylim([-0.003,0.006])
-plt.xlabel('radius [nm]')
-plt.ylabel('Gradient')
- 
-
-plt.figure()
-
-for i in range (0,Data.shape[2]):
-    plt.plot(Radius ,np.gradient(np.gradient( np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:]))),color = colors[i,:],lw =.5)
-
-plt.xlim([0,11])
-plt.ylim([-0.003,0.006])
-plt.xlabel('radius [nm]')
-plt.ylabel('Curvature')
+# # plt.vlines ( Radius [J] , 0,1 )
+# # plt.xlim([0,11]) 
+# plt.xlabel('radius [nm]')
+# plt.ylabel('HHCF [nm^2]')
 
 # plt.figure()
-# plt.plot(points)
+
+# for i in range (0,Data.shape[2]):
+#     plt.plot( Radius , np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:]),color = colors[i,:],lw = .5)
+#     points [i] = np.array(HHCF_results[i,J])/np.max(HHCF_results[i,:])
+    
+# # plt.vlines ( Radius [J] , 0,1 )
+# plt.xlim([0,11]) 
+# plt.xlabel('radius [nm]')
+# plt.ylabel('HHCF [nm^2]')
 
 
-cv2.imshow('early image',Data[:,:,30]/Data[:,:,30].max())
-cv2.imshow('late image',Data[:,:,70]/Data[:,:,70].max())
+# plt.figure()
 
-#%% #########################   object detection ###########################
+# for i in range (0,Data.shape[2]):
+#     plt.plot(Radius ,np.gradient( np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:])),color = colors[i,:],lw =.5)
+
+# plt.xlim([0,11])
+# # plt.ylim([-0.003,0.006])
+# plt.xlabel('radius [nm]')
+# plt.ylabel('Gradient')
+ 
+
+# plt.figure()
+
+# for i in range (0,Data.shape[2]):
+#     plt.plot(Radius ,np.gradient(np.gradient( np.array(HHCF_results[i,:])/np.max(HHCF_results[i,:]))),color = colors[i,:],lw =.5)
+
+# plt.xlim([0,11])
+# plt.ylim([-0.003,0.006])
+# plt.xlabel('radius [nm]')
+# plt.ylabel('Curvature')
+
+
+
+# #%% #########################   object detection ###########################
 
 
 # my_model = Object_detector.Object_detector(Data)
 # my_model.RUN()
 
-# points = my_model.Get_points
+# #%%
+
+# points = my_model.Get_points()
 
 
-# %% diffusion analysis
+# # %% diffusion analysis
 
 # #%%
 # NN_dist = []
@@ -206,7 +241,7 @@ cv2.imshow('late image',Data[:,:,70]/Data[:,:,70].max())
 #     number_of_moved_molecules =  len(list(filter(moved ,NN_dist [O:O + number_of_points_in_frame])))
     
     
-#     if number_of_moved_molecules / number_of_points_in_frame > 0.3:
+#     if number_of_moved_molecules / number_of_points_in_frame > 0.15:
 #         rate.append(np.nan)
 #     else:
             
@@ -218,7 +253,7 @@ cv2.imshow('late image',Data[:,:,70]/Data[:,:,70].max())
         
 # plt.figure()  
 # plt.plot(rate,'.')
-# plt.yscale('log')
+# # plt.yscale('log')
     
     
     

@@ -140,27 +140,7 @@ def update_view (screen,first_frame_num,last_frame_num):
      
     px_first_frame = pygame.surfarray.make_surface(First_Frame)
     px_last_frame  = pygame.surfarray.make_surface(Last_Frame )
-    
-    
-    # # %% creating the movie strip 
-    # frame_increament = (last_frame_num-first_frame_num)//3
-    
-    # Frame_1 = gray( get_frame(frame_increament*1+first_frame_num),150)
-    # Frame_2 = gray( get_frame(frame_increament*2+first_frame_num),150)
-    # Frame_3 = gray( get_frame(frame_increament*3+first_frame_num),150)
-    
-    # px_strip_1 = pygame.surfarray.make_surface(Frame_1)
-    # px_strip_2 = pygame.surfarray.make_surface(Frame_2)
-    # px_strip_3 = pygame.surfarray.make_surface(Frame_3)
-    
-    # # %% "plotting" images
 
-    # screen.blit(px_strip_1, (256 + 1*15, 256-150 ,150,150))
-    # screen.blit(px_strip_2, (256 + 2*15 + 150, 256-150 ,150,150))
-    # screen.blit(px_strip_3, (256 + 3*15 + 300, 256-150 ,150,150))
-    
-
-    
     screen.blit(px_first_frame, (0,0,256,256))
     screen.blit(px_last_frame , (3*256,0,256,256))
     
@@ -182,7 +162,6 @@ def main_loop(number_of_files,number_of_im):
     while RUN_cmd:
         
         
-        
         pygame.display.update()
         events = pygame.event.get()
 
@@ -191,8 +170,6 @@ def main_loop(number_of_files,number_of_im):
         
         slider_last_frame.listen(events)
         slider_last_frame.draw()
-        
-
         
         
         text_first.setText(slider_first_frame.getValue())
@@ -203,8 +180,6 @@ def main_loop(number_of_files,number_of_im):
         text_last.draw()
         
         
-        
-        
         update_view (screen,slider_first_frame.getValue(),slider_last_frame.getValue())
     
         button_done.listen(events)
@@ -213,7 +188,7 @@ def main_loop(number_of_files,number_of_im):
     pygame.display.quit()
         
     
-    return (slider_first_frame.getValue(),slider_last_frame.getValue())
+    return (slider_first_frame.getValue()-1,slider_last_frame.getValue())
 # %%
 
 
@@ -237,42 +212,52 @@ def run (Data_raw):
     for file in Data_raw:
         number_of_im.append( get_number_of_images(file) )
         
-    
-    # %% make dictionary of frames vs. file and image number
-    
-    file_ref = []
-    
-    n = 0
-    
-    for num_in_file in number_of_im:
-        list_ =  num_in_file * [n]
-        image_num = range(1,num_in_file+1)
+    if number_of_im[0] != 1:
+        # %% make dictionary of frames vs. file and image number
         
-        comb = list(zip(list_,image_num))
+        file_ref = []
+        
+        n = 0
+        
+        for num_in_file in number_of_im:
+            list_ =  num_in_file * [n]
+            image_num = range(1,num_in_file+1)
+            
+            comb = list(zip(list_,image_num))
+           
+            file_ref = file_ref + comb
+            
+            n += 1        
+            
+        frame_ref =list ( range(1,sum(number_of_im)+1))
+        
+        global refence_dict
+        
+        refence_dict = dict(zip(frame_ref,file_ref))
+        
+            
+        # %%
+    
+        (first_frame,last_frame) = main_loop (number_of_files,number_of_im)
+        
        
-        file_ref = file_ref + comb
+        frame_list  = list(range(first_frame+1,last_frame+1))
         
-        n += 1        
         
-    frame_ref =list ( range(1,sum(number_of_im)+1))
-    
-    global refence_dict
-    
-    refence_dict = dict(zip(frame_ref,file_ref))
-    
-    # inv_refence_dict = {v: k for k, v in refence_dict.items()}
         
-    # %%
+        used_frames = list( map(refence_dict.get, frame_list) )
+        
+        refence_dict = dict(zip(list(range(0,len(used_frames))),used_frames))
+               
+        return refence_dict
 
-    (first_frame,last_frame) = main_loop (number_of_files,number_of_im)
+    print('only a single frame')
+    return {0:tuple([0,1])}
 
-   
-    frame_list  = list(range(first_frame,last_frame))
-    
-    used_frames = list( map(refence_dict.get, frame_list) )
-    
-    
-    refence_dict = dict(zip(list(range(1,len(used_frames))),used_frames))
-    
-    
-    return refence_dict
+
+
+
+
+
+
+

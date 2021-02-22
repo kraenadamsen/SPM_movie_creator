@@ -23,9 +23,10 @@ class Kmeans_model:
         self.number_of_frames = self.Data.shape[2]
         self.number_of_elements = self.Frame.shape[0]*self.Frame.shape[1]
         self.n = 3        
+        self.Frame_number = 0
         self.centers = self.init_centers()
         self.Labels = np.empty(self.Frame.shape,dtype = np.int16)
-        self.disp_data = np.empty((self.Frame.shape[0],self.Frame.shape[0], 3), dtype=np.uint8)
+        self.disp_data = np.empty((512,512, 3), dtype=np.uint8)
         self.disp_Label = np.empty((self.disp_data.shape), dtype=np.uint8)
         
         self.x_slope = 0
@@ -106,7 +107,7 @@ class Kmeans_model:
             
             self.n  = self.slider_n.getValue()
             
-            self.Frame_number = int(self.slider_frame_number.getValue())
+            self.Frame_number = self.slider_frame_number.getValue()
             
             self.number_of_gauss = self.slider_gauss.getValue()
             
@@ -156,6 +157,7 @@ class Kmeans_model:
 
 
     def update_Frame (self):
+        
         
         self.Frame = self.Data[:,:,self.Frame_number]
         
@@ -286,9 +288,11 @@ class Kmeans_model:
         text_gauss_describe.draw()
         
         
-        
+        if self.number_of_frames == 1:
+            self.number_of_frames = 2
+            
         self.slider_frame_number = pw.Slider(
-                self.screen, Window_size [0] - 400 + 25, 450, 150, 10, min = 1, max = self.number_of_frames-1, step = 1,initial = 0)
+                self.screen, Window_size [0] - 400 + 25, 450, 150, 10, min = 0, max = self.number_of_frames-1, step = 1,initial = 0)
         self.slider_frame_number.draw()
         
         self.text_frame_number  = pw.TextBox(
@@ -312,7 +316,7 @@ class Kmeans_model:
        
         im = np.transpose(im)
 
-        
+        im = cv2.resize(im,(512,512))
         self.disp_data[:, :, 2] = im
         self.disp_data[:, :, 1] = im
         self.disp_data[:, :, 0] = im 
@@ -328,6 +332,7 @@ class Kmeans_model:
        
         im = np.transpose(im)
 
+        im = cv2.resize(im,(512,512))
         
         self.disp_Label[:, :, 2] = im
         self.disp_Label[:, :, 1] = im
@@ -344,6 +349,7 @@ class Kmeans_model:
     def get_all_labels (self):
         
         all_labels = np.empty(self.Data.shape)
+        self.number_of_frames = self.Data.shape[2]
         
         for i in range (0,self.number_of_frames):
             self.Frame_number = i

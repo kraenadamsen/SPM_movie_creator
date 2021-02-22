@@ -66,7 +66,7 @@ and returns the image to which contrast and bightness will be alligned.
 """
 
 
-(level_correction_val , contrast_adjusted_image) = leveling_contrast.run(Data, Refence_dict, Frame_used_for_correction = 1)
+(level_correction_val , contrast_adjusted_image) = leveling_contrast.run(Data, Refence_dict, Frame_used_for_correction = 0)
 
 
 # %% level all images and creates new data holders.
@@ -76,13 +76,21 @@ Initiate new data containers, which are saved in the end.
 Including 1 gwyddion file and two Numpy arrays: 1 for the spatial alligned images and on for the non alligned.
  
 """
-w,h =  utilities.get_Data(Data,Refence_dict[1][0],Refence_dict[1][1]).shape
+w,h =  utilities.get_Data(Data,Refence_dict[0][0],Refence_dict[0][1]).shape
 
 new_gwy_container = gwyfile.objects.GwyContainer()
 
-Non_aligned_Data= np.zeros ([w,h,len(Refence_dict)])
+if len(Refence_dict)==0:
+    
+    Non_aligned_Data= np.zeros ([w,h,1])
+    
+    Aligned_Data = np.zeros ([w,h,1])
+    
+else:        
 
-Aligned_Data = np.zeros ([w,h,len(Refence_dict)])
+    Non_aligned_Data= np.zeros ([w,h,len(Refence_dict)])
+    
+    Aligned_Data = np.zeros ([w,h,len(Refence_dict)])
 
 ## creating a progress bar
 widgets_level = ['[', 
@@ -102,7 +110,7 @@ for image_ref in Refence_dict.keys():
     M_corrected =  utilities.three_point_corrector(level_correction_val,M)
     
     
-    ################### Include filters here id needed #######################
+    ################### Include filters here if needed #######################
     
     
     # ## add filter functions if needed here:
@@ -115,7 +123,7 @@ for image_ref in Refence_dict.keys():
     
     
     # transpose to show as image
-    Non_aligned_Data [:,:,image_ref-1] = M_corrected.transpose() 
+    Non_aligned_Data [:,:,image_ref] = M_corrected.transpose() 
     
     # updates progress bar
     bar_level.update(image_ref)
@@ -164,7 +172,7 @@ for image_ref in Refence_dict.keys():
         
     # translates 
     
-    Aligned_Data [:,:,image_ref-1] = sr.transform(Non_aligned_Data [:,:,image_ref-1]).transpose()
+    Aligned_Data [:,:,image_ref] = sr.transform(Non_aligned_Data [:,:,image_ref-1]).transpose()
     
     # Saves aligned images 
     

@@ -13,6 +13,28 @@ from skimage.feature import peak_local_max,hog
 import pickle
 from sklearn.svm import SVC
 import progressbar 
+# import Compiled_functions
+
+
+
+
+import time
+from collections import deque 
+
+time_que = deque(maxlen=10000)
+def timing(f):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = f(*args, **kw)
+        te = time.time()
+        
+        time_que.append(te-ts) 
+        
+        print(np.mean(time_que))
+        
+        return result
+    return timed
+    
 
 class Object_detector:
 
@@ -87,12 +109,12 @@ class Object_detector:
             
             ## getting values from slides
             
-            self.Frame_number = int(self.slider_frame_number.getValue()) 
+            self.Frame_number = self.slider_frame_number.getValue() 
             
             self.threshold = self.slider_threshold.getValue()
             
             self.min_dist = self.slider_min_dist.getValue()
-            
+                        
             self.n_gauss = int(self.slider_gauss.getValue())
             
             self.SVM_limit = self.slider_SVM.getValue()
@@ -108,6 +130,7 @@ class Object_detector:
             
             self.text_threshold.setText("{:.1f}".format(self.threshold))
             self.text_threshold.draw()
+            
             
             self.text_min_dist.setText(self.min_dist)
             self.text_min_dist.draw()
@@ -185,7 +208,7 @@ class Object_detector:
         self.screen.blit(self.px, self.px.get_rect())    
         
     def update_Frame (self):
-        
+               
         self.Frame = self.Data[:,:,self.Frame_number]        
         
     def update_Frame_corrected (self):             
@@ -225,7 +248,7 @@ class Object_detector:
         
         self.Frame_corrected = filtered_image
         
-        
+    # @timing 
     def get_frame_from_point (self,Point):
         
         w , h = self.Frame_corrected.shape
@@ -267,38 +290,45 @@ class Object_detector:
         # sub_frame = sub_frame /np.max(sub_frame)
         # sub_frame.astype(np.float64)
         return  sub_frame
+
     
+    
+    # @timing 
     def resize_sub_frame (self,subframe):
         return cv2.resize(subframe,(32,32))
         
        
-    
+    # @timing
     def get_all_sub_frames (self):
+        
+        self.sub_arrays = []
         
         self.sub_arrays = list(map(self.get_frame_from_point,self.points_max))
 
         self.sub_arrays = list(map(self.resize_sub_frame,self.sub_arrays))        
-
+    # @timing 
     def Feature_exstraction (self,sub_frame):
         
         feature_inference = hog(sub_frame,orientations=6,pixels_per_cell=(8,8),cells_per_block=(4,4),block_norm= 'L2')
         
         return feature_inference
         
-        
+    # @timing    
     def SVM_pretrained_inference(self):
         
-        Features = list(map(self.Feature_exstraction ,self.sub_arrays))
+        if self.SVM_limit != 0:
         
-        if len(Features):
-        
-            results = self.SVM_model_pretrained.decision_function(Features)
+            Features = list(map(self.Feature_exstraction ,self.sub_arrays))
             
-            results = 1-(1/(1+np.exp(results)))
+            if len(Features):
             
-            self.results = results > self.SVM_limit
-            
-            self.points_max = self.points_max[self.results]
+                results = self.SVM_model_pretrained.decision_function(Features)
+                
+                results = 1-(1/(1+np.exp(results)))
+                
+                self.results = results > self.SVM_limit
+                
+                self.points_max = self.points_max[self.results]
         
         
         
@@ -333,8 +363,6 @@ class Object_detector:
         self.svc_custom.fit(self.custom_features, self.custom_Labels)
 
         print(self.svc_custom.score(self.custom_features, self.custom_Labels))
-
-    
 
     
     def svm_inference(test_image):
@@ -410,9 +438,8 @@ class Object_detector:
         text_min_dist_describe.draw()
         
         
-        
         self.slider_SVM= pw.Slider(
-                self.screen, Window_size [0] - 400 + 225, 60, 150, 10, min = .05, max = 1, step = 0.01 ,initial = 0.5) 
+                self.screen, Window_size [0] - 400 + 225, 60, 150, 10, min = .00, max = 1, step = 0.01 ,initial = 0.5) 
         self.slider_SVM.draw()
         
         self.text_SVM  = pw.TextBox(
@@ -441,9 +468,11 @@ class Object_detector:
         text_gauss_describe.draw()
         
         
-        
+        if self.number_of_frames == 1:
+            self.number_of_frames = 2
+            
         self.slider_frame_number = pw.Slider(
-                self.screen, Window_size [0] - 400 + 25, 450, 150, 10, min = 1, max = self.number_of_frames-1, step = 1,initial = 0)
+                self.screen, Window_size [0] - 400 + 25, 450, 150, 10, min = 0, max = self.number_of_frames-1, step = 1,initial = 0)
         self.slider_frame_number.draw()
         
         self.text_frame_number  = pw.TextBox(
@@ -482,7 +511,7 @@ class Object_detector:
         
         
         self.slider_window_size = pw.Slider(
-            self.screen, Window_size [0] - 400 + 225    ,300, 150, 10, min = 8, max = 48, step = 1 ,initial = 32) 
+            self.screen, Window_size [0] - 400 + 225    ,300, 150, 10, min = 8, max = 64, step = 2 ,initial = 32) 
         self.slider_window_size.draw()
         
         self.text_window_size  = pw.TextBox(
@@ -540,6 +569,8 @@ class Object_detector:
             progressbar.ETA(), ') '] 
 
         bar_points = progressbar.ProgressBar(max_value=self.number_of_frames,widgets=widgets_get_points).start()
+        
+        self.number_of_frames = self.Data.shape[2]
         
         for self.Frame_number in range(0,self.number_of_frames):
             
